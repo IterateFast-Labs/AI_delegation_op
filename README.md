@@ -253,7 +253,6 @@ Based on the G-Eval median score, the framework provides clear recommendations:
 
 A stage-based pipeline that turns a governance proposal into a transparent, statistically robust recommendation using coordinated AI agents and G-Eval scoring
 
----
 
 ## Table of Contents
 
@@ -268,13 +267,11 @@ A stage-based pipeline that turns a governance proposal into a transparent, stat
 * [Use Cases](#use-cases)
 * [Roadmap](#roadmap)
 
----
 
 ## Overview
 
 This module coordinates multiple specialist agents to analyze a proposal, debate trade-offs, and produce a recommendation backed by reproducible statistics. It emphasizes determinism, structured outputs, and lightweight runtime instrumentation for credibility and scale
 
----
 
 ## Architecture at a Glance
 
@@ -288,7 +285,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
 * **Deterministic runs** via temperature 0, fixed prompts, versioned artifacts
 * **Idempotent tasks** identified by `run_id`, `agent_id`, `prompt_hash`, `seed`
 
----
 
 ## Execution Model
 
@@ -302,7 +298,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
 * **Independence & Parallelism**: independent calls can execute concurrently
 * **Reproducibility**: consistent prompts and seeds enable byte-for-byte replays
 
----
 
 ## State Management
 
@@ -310,7 +305,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
 * **Input/Output snapshots** per stage to enable replays and side-by-side comparisons
 * **Minimal UI state**: the UI consumes events; orchestration state remains on the server
 
----
 
 ## Progress & Metrics
 
@@ -323,7 +317,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
   * **Token & cost accounting**: input/output tokens, estimated spend
   * **Cache effectiveness**: hit rate and avoided cost
 
----
 
 ## Quality Assurance
 
@@ -337,7 +330,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
   * Score bounds and weight checks
   * Auto-correction prompts for incomplete structures, then re-validate
 
----
 
 ## Rate Limiting, Timeouts & Caching
 
@@ -348,7 +340,6 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
   * Response cache keyed by `prompt_hash + context_fingerprint`
   * Duplicate calls within a run are suppressed
 
----
 
 ## G-Eval Scoring Metrics
 
@@ -365,14 +356,12 @@ Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregati
 * Evidence fidelity: count and relevance of retrieved citations
 * Cross-evaluation consistency: detect contradictions and request clarification when needed
 
----
 
 ## Use Cases
 
 * **Governance proposals**: automatic classification, precedent retrieval, expert debate, G-Eval aggregation, recommendation with mitigations
 * **Enterprise decision support**: large-scale parallel scoring with model routing and transparent metrics for stakeholders
 
----
 
 ## Roadmap
 
