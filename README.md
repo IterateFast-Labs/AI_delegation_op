@@ -249,70 +249,134 @@ Based on the G-Eval median score, the framework provides clear recommendations:
 
 ## Performance Metrics Explained
 
-### Multi-Agent Orchestration Metrics
+# Multi-Agent Orchestration Flow
 
-**Duration Tracking:**
-- Measures wall-clock time for each agent and overall framework
-- Identifies performance bottlenecks and optimization opportunities
-- Tracks parallel vs. sequential processing efficiency
+A stage-based pipeline that turns a governance proposal into a transparent, statistically robust recommendation using coordinated AI agents and G-Eval scoring
 
-**Token Usage Analysis:**
-- Input token consumption (prompt size optimization)
-- Output token generation (response length monitoring)
-- Cost estimation and budget tracking
-- Per-agent resource utilization
+---
 
-### G-Eval Scoring Metrics
+## Table of Contents
 
-**Statistical Reliability:**
-- **Standard Deviation**: Measures score consistency across evaluations
-- **Confidence Intervals**: Statistical confidence in the final score
-- **Outlier Detection**: Identifies anomalous evaluations
-- **Convergence Analysis**: How quickly scores stabilize
+* [Overview](#overview)
+* [Architecture at a Glance](#architecture-at-a-glance)
+* [Execution Model](#execution-model)
+* [State Management](#state-management)
+* [Progress & Metrics](#progress--metrics)
+* [Quality Assurance](#quality-assurance)
+* [Rate Limiting, Timeouts & Caching](#rate-limiting-timeouts--caching)
+* [G-Eval Scoring Metrics](#g-eval-scoring-metrics)
+* [Use Cases](#use-cases)
+* [Roadmap](#roadmap)
 
-**Evaluation Quality:**
-- **Response Parsing Success Rate**: JSON parsing reliability
-- **Criteria Coverage**: How well each evaluation addresses scoring criteria
-- **Rationale Quality**: Depth and relevance of provided reasoning
+---
 
-## Use Cases & Applications
+## Overview
 
-### Governance Proposal Analysis
-- **DAOs**: Decentralized organization decision making
-- **Protocol Upgrades**: Technical change assessment
-- **Treasury Management**: Fund allocation decisions
-- **Community Initiatives**: Grassroots proposal evaluation
+This module coordinates multiple specialist agents to analyze a proposal, debate trade-offs, and produce a recommendation backed by reproducible statistics. It emphasizes determinism, structured outputs, and lightweight runtime instrumentation for credibility and scale
 
-### Enterprise Decision Support
-- **Investment Decisions**: Multi-stakeholder financial analysis
-- **Technology Adoption**: Cross-functional technical evaluation
-- **Policy Changes**: Regulatory and compliance impact assessment
-- **Strategic Planning**: Long-term initiative feasibility
+---
 
-### Research & Academia
-- **Peer Review**: Academic paper evaluation assistance
-- **Grant Applications**: Research proposal assessment
-- **Policy Research**: Evidence-based policy analysis
-- **Educational Assessment**: Multi-criteria evaluation systems
+## Architecture at a Glance
 
-## Future Enhancements
+```
+Input → Classification → Expert Discussion → G-Eval (N runs) → Aggregation → Recommendation
+                           │                     │
+                           └── Retrieval (rules, precedents, evidence) ──┘
+```
 
-### Planned Features
-- **Dynamic Agent Selection**: Context-aware expert assignment
-- **Learning & Adaptation**: Agent performance optimization over time
-- **Multi-Modal Analysis**: Document, image, and video content processing
-- **Real-Time Collaboration**: Live human-AI decision making
-- **Blockchain Integration**: On-chain governance integration
-- **Custom Scoring Models**: Domain-specific evaluation criteria
+* **Stage-based pipeline** with parallel execution for independent steps
+* **Deterministic runs** via temperature 0, fixed prompts, versioned artifacts
+* **Idempotent tasks** identified by `run_id`, `agent_id`, `prompt_hash`, `seed`
 
-### Scalability Improvements
-- **Parallel G-Eval**: Concurrent independent evaluations
-- **Model Diversity**: Multiple LLM providers for robustness
-- **Caching & Optimization**: Response caching and prompt optimization
-- **Auto-Scaling**: Dynamic resource allocation based on load
+---
 
-## Conclusion
+## Execution Model
 
-The AI Multi-Agent Decision Framework represents a significant advancement in automated decision support systems. By combining multi-agent orchestration with G-Eval statistical rigor, it provides reliable, transparent, and comprehensive analysis of complex proposals. The framework's modular architecture, extensive metrics, and focus on reproducibility make it suitable for high-stakes decision making across various domains.
+* **Stages**
 
-The system's strength lies not in replacing human judgment, but in augmenting it with consistent, thorough, and statistically sound analysis that scales efficiently while maintaining transparency and accountability.
+  * **Classification**: map proposal to governance category and extract key variables
+  * **Expert Discussion**: finance, technology, governance agents exchange structured turns
+  * **G-Eval**: multiple independent evaluations on the same context
+  * **Aggregation**: compute central tendency, dispersion, and confidence interval
+  * **Recommendation**: map final score to action with risk-mitigation checklist
+* **Independence & Parallelism**: independent calls can execute concurrently
+* **Reproducibility**: consistent prompts and seeds enable byte-for-byte replays
+
+---
+
+## State Management
+
+* **Server-side persistence** for each stage (status, latency, tokens in/out, cost, model, context fingerprint)
+* **Input/Output snapshots** per stage to enable replays and side-by-side comparisons
+* **Minimal UI state**: the UI consumes events; orchestration state remains on the server
+
+---
+
+## Progress & Metrics
+
+* **Real-time events** surfaced to the UI (scheduled, started, succeeded, failed, retried)
+* **Weighted progress** reflects parallel work and relative effort per stage
+* **Core metrics**
+
+  * **Timings**: per-stage and end-to-end wall-clock time
+  * **Throughput**: tasks/second and tokens/second
+  * **Token & cost accounting**: input/output tokens, estimated spend
+  * **Cache effectiveness**: hit rate and avoided cost
+
+---
+
+## Quality Assurance
+
+* **Input validation**
+
+  * Proposal URL reachability and successful content extraction
+  * Required fields populated after normalization to internal schema
+* **Output validation**
+
+  * Strict JSON schema for all agent responses
+  * Score bounds and weight checks
+  * Auto-correction prompts for incomplete structures, then re-validate
+
+---
+
+## Rate Limiting, Timeouts & Caching
+
+* **Provider-level concurrency caps** with adaptive throttling
+* **Per-stage soft/hard timeouts** with graceful fallbacks
+* **Caching & de-duplication**
+
+  * Response cache keyed by `prompt_hash + context_fingerprint`
+  * Duplicate calls within a run are suppressed
+
+---
+
+## G-Eval Scoring Metrics
+
+* **Central tendency**: report **median** (robust to outliers) alongside **mean** (skew awareness)
+* **Dispersion**: **standard deviation** plus **IQR** for robust spread
+* **Confidence intervals**: bootstrap CI at the aggregate score level
+* **Outliers**: identify via nonparametric fences or standardized scores and note impact
+* **Convergence**: track stability of the median as evaluations accumulate
+
+**Evaluation quality signals**
+
+* Parsing success rate for structured outputs
+* Criteria coverage: Evidence Quality, Expert Consistency, Risk Assessment, Implementation Viability, Stakeholder Impact
+* Evidence fidelity: count and relevance of retrieved citations
+* Cross-evaluation consistency: detect contradictions and request clarification when needed
+
+---
+
+## Use Cases
+
+* **Governance proposals**: automatic classification, precedent retrieval, expert debate, G-Eval aggregation, recommendation with mitigations
+* **Enterprise decision support**: large-scale parallel scoring with model routing and transparent metrics for stakeholders
+
+---
+
+## Roadmap
+
+* Dynamic agent selection based on proposal embeddings and historical performance
+* Real-time human-in-the-loop comments that feed the next expert turns
+* Multimodal analysis (diagrams, screenshots, code diffs) where relevant
+* Model diversity and provider mixing for robustness under varying workloads
